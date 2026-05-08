@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Барицентры вероятностных мер | Визуализация понятия</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* улучшение интерфейса, но текст можно копировать */
+        }
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(145deg, #f5f7fc 0%, #eef2f8 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.05);
+            padding: 1.5rem 2rem 2rem 2rem;
+            transition: all 0.2s;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            background: linear-gradient(135deg, #1a2a4f, #2c3e66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .sub {
+            color: #2c3e66b3;
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 0.5rem 0 1.2rem 0;
+            font-weight: 400;
+            font-size: 1rem;
+        }
+        .theory {
+            background: #eef2ff88;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.8rem;
+            font-size: 0.95rem;
+            color: #1e293b;
+            border: 1px solid #cbd5e180;
+            backdrop-filter: blur(4px);
+        }
+        .theory p {
+            margin: 0.5rem 0;
+        }
+        .theory .formula {
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
+            background: #0f172a10;
+            padding: 0.15rem 0.35rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            padding: 1rem 1.3rem 1.3rem 1.3rem;
+            flex: 1;
+            min-width: 200px;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .card h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0f172a;
+        }
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+        .param-value {
+            font-family: monospace;
+            font-weight: 600;
+            background: #f1f5f9;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .stat-badge {
+            background: #e6f0ff;
+            border-radius: 1rem;
+            padding: 0.5rem 0.8rem;
+            margin-top: 0.8rem;
+            text-align: center;
+        }
+        .stat-badge span {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #2563eb;
+        }
+        .chart-area {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 0.8rem;
+            box-shadow: 0 12px 25px -12px rgba(0,0,0,0.15);
+            margin-top: 0.5rem;
+            border: 1px solid #eef2ff;
+        }
+        canvas {
+            max-height: 420px;
+            width: 100%;
+        }
+        .flex-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.8rem;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 20px;
+            margin-right: 6px;
+        }
+        .footnote {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #475569;
+            border-top: 1px solid #cbd5e180;
+            padding-top: 1rem;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        @media (max-width: 780px) {
+            .container { padding: 1rem; }
+            .card { padding: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚖️ Барицентры вероятностных мер</h1>
+    <div class="sub">Визуализация среднего взвешенного для распределений — интуиция барицентра в пространстве мер</div>
+
+    <div class="theory">
+        <p>📐 <strong>Барицентр (среднее) вероятностных мер</strong> — обобщение обычного среднего арифметического на пространство распределений.
+        Для дискретного набора мер <span class="formula">μ₁, μ₂, …, μₖ</span> с весами <span class="formula">λᵢ ≥ 0, Σλᵢ = 1</span>, их барицентр — это мера <span class="formula">μ* = Σ λᵢ μᵢ</span>.
+        Визуально: если каждая мера — это «облако» вероятности (плотность), то барицентр — взвешенное наложение.
+        На графике показаны две меры (синяя и красная) и их барицентр (фиолетовая пунктирная линия) в зависимости от веса <strong>λ</strong>.</p>
+        <p>🟣 Барицентр интерполирует между распределениями: при λ=0 получаем меру A, при λ=1 — меру B. 
+        Это понятие фундаментально в оптимальном транспорте, байесовском выводе и машинном обучении (среднее Васильштейна).</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>🎛️ Вес барицентра <span style="font-size:0.9rem;">λ (мера B → A)</span></h3>
+            <div class="slider-container">
+                <input type="range" id="lambdaSlider" min="0" max="1" step="0.01" value="0.45">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>↖️ Мера A</span>
+                    <span id="lambdaValue" class="param-value">0.45</span>
+                    <span>Мера B ↗️</span>
+                </div>
+            </div>
+            <div class="stat-badge">
+                📍 Барицентр = <span id="barycenterMean">—</span><br>
+                <span style="font-size:0.7rem;">(среднее значение распределения)</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📊 Мера A (левая мода)</h3>
+            <div class="slider-container">
+                <label>μ₁ (среднее): <span id="meanAVal" class="param-value">2.0</span></label>
+                <input type="range" id="meanA" min="-2" max="8" step="0.1" value="2.0">
+                <label>σ₁ (разброс): <span id="sigmaAVal" class="param-value">1.2</span></label>
+                <input type="range" id="sigmaA" min="0.4" max="2.5" step="0.02" value="1.2">
+            </div>
+        </div>
+        <div class="card">
+            <h3>📈 Мера B (правая мода)</h3>
+            <div class="slider-container">
+                <label>μ₂ (среднее): <span id="meanBVal" class="param-value">6.0</span></label>
+                <input type="range" id="meanB" min="-2" max="8" step="0.1" value="6.0">
+                <label>σ₂ (разброс): <span id="sigmaBVal" class="param-value">1.0</span></label>
+                <input type="range" id="sigmaB" min="0.4" max="2.5" step="0.02" value="1.0">
+            </div>
+            <div style="margin-top: 0.6rem; text-align:center;">
+                <button id="resetBtn">⟳ Сбросить параметры</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-area">
+        <canvas id="densityChart" width="800" height="400" style="width:100%; height:auto; max-height:420px"></canvas>
+        <div class="flex-legend">
+            <div><span class="legend-color" style="background: #3b82f6;"></span> Мера A (плотность)</div>
+            <div><span class="legend-color" style="background: #ef4444;"></span> Мера B (плотность)</div>
+            <div><span class="legend-color" style="background: #a855f7; border: 1px dashed #a855f7;"></span> Барицентр  <span style="font-family:monospace;">μ* = λ·A + (1-λ)·B</span></div>
+            <div><span class="legend-color" style="background: #10b981;"></span> ● Средние (математич. ожидания)</div>
+        </div>
+    </div>
+    <div class="footnote">
+        💡 Барицентр мер — это <strong>выпуклая комбинация</strong> плотностей: p*(x) = λ·p_A(x) + (1-λ)·p_B(x).<br>
+        При λ=0 барицентр совпадает с мерой B, при λ=1 — с мерой A. Сглаживание между режимами.
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Получение элементов
+        const lambdaSlider = document.getElementById('lambdaSlider');
+        const lambdaValueSpan = document.getElementById('lambdaValue');
+        const barycenterMeanSpan = document.getElementById('barycenterMean');
+        
+        const meanASlider = document.getElementById('meanA');
+        const meanAVal = document.getElementById('meanAVal');
+        const sigmaASlider = document.getElementById('sigmaA');
+        const sigmaAVal = document.getElementById('sigmaAVal');
+        
+        const meanBSlider = document.getElementById('meanB');
+        const meanBVal = document.getElementById('meanBVal');
+        const sigmaBSlider = document.getElementById('sigmaB');
+        const sigmaBVal = document.getElementById('sigmaBVal');
+        
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // Контекст Chart.js
+        const ctx = document.getElementById('densityChart').getContext('2d');
+        
+        // Настройки сетки x
+        let chart;
+        const X_MIN = -3.5;
+        const X_MAX = 11.5;
+        const POINTS = 300;
+        
+        // Функция нормальной плотности
+        function normalPDF(x, mean, sigma) {
+            const variance = sigma * sigma;
+            const coeff = 1.0 / (Math.sqrt(2 * Math.PI) * sigma);
+            const exponent = -((x - mean) ** 2) / (2 * variance);
+            return coeff * Math.exp(exponent);
+        }
+        
+        // Вычисление массива значений для мер A, B и барицентра
+        function computeDensities(lambda, meanA, sigmaA, meanB, sigmaB) {
+            const xs = [];
+            const densityA = [];
+            const densityB = [];
+            const densityBary = [];
+            
+            for (let i = 0; i <= POINTS; i++) {
+                const x = X_MIN + (i / POINTS) * (X_MAX - X_MIN);
+                xs.push(x);
+                const a = normalPDF(x, meanA, sigmaA);
+                const b = normalPDF(x, meanB, sigmaB);
+                densityA.push(a);
+                densityB.push(b);
+                // барицентр: λ * A + (1-λ) * B   (вес λ для меры A, (1-λ) для меры B)
+                // согласно слайдеру: λ -> доля меры A, мера B вносит (1-λ)
+                const bary = lambda * a + (1 - lambda) * b;
+                densityBary.push(bary);
+            }
+            return { xs, densityA, densityB, densityBary };
+        }
+        
+        // Математическое ожидание барицентра (линейность: λ E[A] + (1-λ) E[B])
+        function computeBarycenterMean(lambda, meanA, meanB) {
+            return lambda * meanA + (1 - lambda) * meanB;
+        }
+        
+        // Обновить все текстовые метки и график
+        function updateAll() {
+            // считываем значения
+            let lambda = parseFloat(lambdaSlider.value);
+            let meanA = parseFloat(meanASlider.value);
+            let sigmaA = parseFloat(sigmaASlider.value);
+            let meanB = parseFloat(meanBSlider.value);
+            let sigmaB = parseFloat(sigmaBSlider.value);
+            
+            // ограничения сигмы уже заданы слайдерами, но на всякий случай
+            sigmaA = Math.max(0.3, Math.min(2.8, sigmaA));
+            sigmaB = Math.max(0.3, Math.min(2.8, sigmaB));
+            
+            // обновление отображения чисел
+            lambdaValueSpan.innerText = lambda.toFixed(3);
+            meanAVal.innerText = meanA.toFixed(2);
+            sigmaAVal.innerText = sigmaA.toFixed(2);
+            meanBVal.innerText = meanB.toFixed(2);
+            sigmaBVal.innerText = sigmaB.toFixed(2);
+            
+            const baryMean = computeBarycenterMean(lambda, meanA, meanB);
+            barycenterMeanSpan.innerText = baryMean.toFixed(3);
+            
+            // вычисление плотностей
+            const { xs, densityA, densityB, densityBary } = computeDensities(lambda, meanA, sigmaA, meanB, sigmaB);
+            
+            // обновление данных графика
+            if (chart) {
+                chart.data.datasets[0].data = densityA;
+                chart.data.datasets[1].data = densityB;
+                chart.data.datasets[2].data = densityBary;
+                // обновить аннотации для средних (зелёные маркеры)
+                // так как аннотации обновляются через options, проще переустановить
+                // но аннотации меняем динамически
+                const newAnnotations = {
+                    meanAAnnotation: {
+                        type: 'line',
+                        xMin: meanA,
+                        xMax: meanA,
+                        yMin: 0,
+                        yMax: Math.max(...densityA, ...densityB, ...densityBary) * 0.9,
+                        borderColor: '#10b981',
+                        borderWidth: 2.5,
+                        borderDash: [6, 4],
+                        label: {
+                            content: `E[A] = ${meanA.toFixed(2)}`,
+                            enabled: true,
+                            position: 'top',
+                            backgroundColor: '#10b981cc',
+                            color: 'white',
+                            font: { size: 10 }
+                        }
+                    },
+                    meanBAnnotation: {
+                        type: 'line',
+                        xMin: meanB,
+                        xMax: meanB,
+                        yMin: 0,
+                        yMax: Math.max(...densityA, ...densityB, ...densityBary) * 0.9,
+                        borderColor: '#10b981',
+                        borderWidth: 2.5,
+                        borderDash: [6, 4],
+                        label: {
+                            content: `E[B] = ${meanB.toFixed(2)}`,
+                            enabled: true,
+                            position: 'top',
+                            backgroundColor: '#10b981cc',
+                            color: 'white',
+                            font: { size: 10 }
+                        }
+                    },
+                    baryMeanAnnotation: {
+                        type: 'line',
+                        xMin: baryMean,
+                        xMax: baryMean,
+                        yMin: 0,
+                        yMax: Math.max(...densityA, ...densityB, ...densityBary) * 0.85,
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        borderDash: [8, 5],
+                        label: {
+                            content: `барицентр E = ${baryMean.toFixed(2)}`,
+                            enabled: true,
+                            position: 'top',
+                            backgroundColor: '#f59e0bcc',
+                            color: 'white',
+                            font: { size: 9, weight: 'bold' }
+                        }
+                    }
+                };
+                
+                chart.options.plugins.annotation.annotations = newAnnotations;
+                chart.update();
+            } else {
+                initChart(xs, densityA, densityB, densityBary, meanA, meanB, baryMean);
+            }
+        }
+        
+        function initChart(xLabels, densityAData, densityBData, densityBaryData, meanA, meanB, baryMean) {
+            if (chart) {
+                chart.destroy();
+            }
+            const maxY = Math.max(...densityAData, ...densityBData, ...densityBaryData) * 1.05;
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xLabels.map(x => x.toFixed(2)),
+                    datasets: [
+                        {
+                            label: 'Мера A (плотность)',
+                            data: densityAData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,0.08)',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.2,
+                            order: 2
+                        },
+                        {
+                            label: 'Мера B (плотность)',
+                            data: densityBData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,0.05)',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.2,
+                            order: 2
+                        },
+                        {
+                            label: 'Барицентр μ* (взвешенная сумма)',
+                            data: densityBaryData,
+                            borderColor: '#a855f7',
+                            backgroundColor: 'rgba(168,85,247,0.1)',
+                            borderWidth: 3,
+                            borderDash: [7, 5],
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.2,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    let val = context.raw;
+                                    return `${label}: ${val.toFixed(4)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { font: { size: 11 }, boxWidth: 12 }
+                        },
+                        annotation: {
+                            annotations: {
+                                meanAAnnotation: {
+                                    type: 'line',
+                                    xMin: meanA,
+                                    xMax: meanA,
+                                    yMin: 0,
+                                    yMax: maxY * 0.9,
+                                    borderColor: '#10b981',
+                                    borderWidth: 2.5,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        content: `E[A] = ${meanA.toFixed(2)}`,
+                                        enabled: true,
+                                        position: 'top',
+                                        backgroundColor: '#10b981cc',
+                                        color: 'white',
+                                        font: { size: 10 }
+                                    }
+                                },
+                                meanBAnnotation: {
+                                    type: 'line',
+                                    xMin: meanB,
+                                    xMax: meanB,
+                                    yMin: 0,
+                                    yMax: maxY * 0.9,
+                                    borderColor: '#10b981',
+                                    borderWidth: 2.5,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        content: `E[B] = ${meanB.toFixed(2)}`,
+                                        enabled: true,
+                                        position: 'top',
+                                        backgroundColor: '#10b981cc',
+                                        color: 'white',
+                                        font: { size: 10 }
+                                    }
+                                },
+                                baryMeanAnnotation: {
+                                    type: 'line',
+                                    xMin: baryMean,
+                                    xMax: baryMean,
+                                    yMin: 0,
+                                    yMax: maxY * 0.85,
+                                    borderColor: '#f59e0b',
+                                    borderWidth: 2,
+                                    borderDash: [8, 5],
+                                    label: {
+                                        content: `барицентр E = ${baryMean.toFixed(2)}`,
+                                        enabled: true,
+                                        position: 'top',
+                                        backgroundColor: '#f59e0bcc',
+                                        color: 'white',
+                                        font: { size: 9, weight: 'bold' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'x (значение случайной величины)',
+                                color: '#334155'
+                            },
+                            ticks: { stepSize: 1, autoSkip: true },
+                            grid: { color: '#e2e8f0' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Плотность вероятности',
+                                color: '#334155'
+                            },
+                            beginAtZero: true,
+                            grid: { color: '#e2e8f0' }
+                        }
+                    },
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                }
+            });
+        }
+        
+        // Обновление с пересчетом осей (при изменении параметров плотности меняется maxY, нужно обновить аннотации)
+        function fullUpdate() {
+            let lambda = parseFloat(lambdaSlider.value);
+            let meanA = parseFloat(meanASlider.value);
+            let sigmaA = parseFloat(sigmaASlider.value);
+            let meanB = parseFloat(meanBSlider.value);
+            let sigmaB = parseFloat(sigmaBSlider.value);
+            
+            lambdaValueSpan.innerText = lambda.toFixed(3);
+            meanAVal.innerText = meanA.toFixed(2);
+            sigmaAVal.innerText = sigmaA.toFixed(2);
+            meanBVal.innerText = meanB.toFixed(2);
+            sigmaBVal.innerText = sigmaB.toFixed(2);
+            const baryMean = computeBarycenterMean(lambda, meanA, meanB);
+            barycenterMeanSpan.innerText = baryMean.toFixed(3);
+            
+            const { xs, densityA, densityB, densityBary } = computeDensities(lambda, meanA, sigmaA, meanB, sigmaB);
+            const maxCurrent = Math.max(...densityA, ...densityB, ...densityBary) * 1.05;
+            
+            if (chart) {
+                chart.data.datasets[0].data = densityA;
+                chart.data.datasets[1].data = densityB;
+                chart.data.datasets[2].data = densityBary;
+                // обновляем аннотации (координаты)
+                chart.options.plugins.annotation.annotations = {
+                    meanAAnnotation: {
+                        type: 'line', xMin: meanA, xMax: meanA, yMin: 0, yMax: maxCurrent * 0.9,
+                        borderColor: '#10b981', borderWidth: 2.5, borderDash: [6, 4],
+                        label: { content: `E[A] = ${meanA.toFixed(2)}`, enabled: true, position: 'top', backgroundColor: '#10b981cc', color: 'white', font: { size: 10 } }
+                    },
+                    meanBAnnotation: {
+                        type: 'line', xMin: meanB, xMax: meanB, yMin: 0, yMax: maxCurrent * 0.9,
+                        borderColor: '#10b981', borderWidth: 2.5, borderDash: [6, 4],
+                        label: { content: `E[B] = ${meanB.toFixed(2)}`, enabled: true, position: 'top', backgroundColor: '#10b981cc', color: 'white', font: { size: 10 } }
+                    },
+                    baryMeanAnnotation: {
+                        type: 'line', xMin: baryMean, xMax: baryMean, yMin: 0, yMax: maxCurrent * 0.85,
+                        borderColor: '#f59e0b', borderWidth: 2, borderDash: [8, 5],
+                        label: { content: `барицентр E = ${baryMean.toFixed(2)}`, enabled: true, position: 'top', backgroundColor: '#f59e0bcc', color: 'white', font: { size: 9, weight: 'bold' } }
+                    }
+                };
+                chart.update();
+            } else {
+                initChart(xs, densityA, densityB, densityBary, meanA, meanB, baryMean);
+            }
+        }
+        
+        // обработчики событий
+        lambdaSlider.addEventListener('input', () => fullUpdate());
+        meanASlider.addEventListener('input', () => fullUpdate());
+        sigmaASlider.addEventListener('input', () => fullUpdate());
+        meanBSlider.addEventListener('input', () => fullUpdate());
+        sigmaBSlider.addEventListener('input', () => fullUpdate());
+        
+        resetBtn.addEventListener('click', () => {
+            lambdaSlider.value = '0.45';
+            meanASlider.value = '2.0';
+            sigmaASlider.value = '1.2';
+            meanBSlider.value = '6.0';
+            sigmaBSlider.value = '1.0';
+            fullUpdate();
+        });
+        
+        // начальная инициализация
+        const initLambda = parseFloat(lambdaSlider.value);
+        const initMeanA = parseFloat(meanASlider.value);
+        const initSigmaA = parseFloat(sigmaASlider.value);
+        const initMeanB = parseFloat(meanBSlider.value);
+        const initSigmaB = parseFloat(sigmaBSlider.value);
+        const initBaryMean = computeBarycenterMean(initLambda, initMeanA, initMeanB);
+        const { xs, densityA, densityB, densityBary } = computeDensities(initLambda, initMeanA, initSigmaA, initMeanB, initSigmaB);
+        initChart(xs, densityA, densityB, densityBary, initMeanA, initMeanB, initBaryMean);
+        
+        // обновляем текстовые поля
+        lambdaValueSpan.innerText = initLambda.toFixed(3);
+        meanAVal.innerText = initMeanA.toFixed(2);
+        sigmaAVal.innerText = initSigmaA.toFixed(2);
+        meanBVal.innerText = initMeanB.toFixed(2);
+        sigmaBVal.innerText = initSigmaB.toFixed(2);
+        barycenterMeanSpan.innerText = initBaryMean.toFixed(3);
+    })();
+</script>
+</body>
+</html>
